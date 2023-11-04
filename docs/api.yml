@@ -1,0 +1,352 @@
+openapi: 3.0.0
+
+info:
+  title: tictactoe-mp-ws-gamestate
+  description: API for controlling game states for the tic-tac-toe-multiplayer-websocket aplication
+  version: 1.0
+  contact:
+    name: Rafael 'leon3cs' Araújo
+    url: https://github.com/Leon3cs
+
+servers:
+  - url: http://localhost:8000
+    description: Local testing only
+
+components:
+  schemas:
+    MatchUsers:
+      type: array
+      description: List of socketIds for the players in the match
+      items:
+        type: string
+    User:
+      type: object
+      properties:
+        name: 
+          type: string
+          description: User name
+        socketId:
+          type: string
+          description: User's socketId
+      required:
+        - name
+        - socketId
+    MatchMove:
+      type: object
+      properties:
+        row: 
+          type: number
+          description: Row of the match's grid the where the player with make a move
+        col: 
+          type: number
+          description: Column of the match's grid where the player will make a move
+        playerId:
+          type: string
+          description: Id of the player making a move on the grid
+    Match:
+      type: object
+      properties:
+        match:
+          description: Match state
+          type: object
+          properties:
+            players:
+              type: array
+              description: List of player socketIds in the current match (always max 2 players)
+              items:
+                type: string
+            turn:
+              type: boolean
+              description: Controls which player has the current turn, 'false' being O and 'true' being X
+            first: 
+              type: string
+              description: The first player to start the game, tipocally is the first who enters the game.
+            round:
+              type: string
+              description:  The socketId of the player that has the current turn
+            gridId:
+              type: string
+              description: Id of the match's grid
+            endgame: 
+              type: boolean
+              description: Indicates whether or not the game ended, either by a player win or all tiles have been filled
+            circleWin:
+              type: boolean
+              description: Indicates if in the current game state the player as circle has won
+            crossWin:
+              type: boolean
+              description: Indicates if in the current game state the player as cross has won
+            draw: 
+              types: boolean
+              description: Indicates a draw if neither player won the game after filling all grid tiles
+            circleScore:
+              types: number
+              description: Number of times the player as circle won
+            crossScore:
+              types: number
+              description: Number of times the player as cross won
+        grid:
+          description: The representation of a game with all players moves
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+
+  examples:
+    MatchUsersExample:
+      summary: Match users example
+      value:
+        - osrg9s79-9ae879ag7
+        - sgsrgsrg-9rs7g6s9g
+    MatchExample:
+      summary: Starting match example
+      value:
+        match:
+          players: 
+            - kopuphlj-ouhji
+            - uqegyfqek-tu94
+          turn: false
+          first: kopuphlj-ouhji
+          round: kopuphlj-ouhji
+          gridId: HE03OUEFAOUHFEAEFHU96EFA9769
+          endgame: false
+          circleWin: false
+          crossWin: false
+          draw: false
+          circleScore: 0
+          crossScore: 0
+        grid:
+          value:
+            - [0,0,0]
+            - [0,0,0]
+            - [0,0,0]
+    UserExample:
+      summary: User example
+      value:
+        name: john21
+        socketId: aidaeifj9-prgijw97
+    MatchMoveExample:
+      summary: A player move on a match
+      value: 
+        row: 0
+        col: 0
+        playerId: aidaeifj9-prgijw97
+
+tags:
+  - name: User
+    description: Management of users playing the games
+  - name: Match
+    description: Match management
+
+paths:
+  /user:
+    post:
+      tags:
+        - User
+      summary: Create an users
+      responses:
+        201: 
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                userExample:
+                  $ref: '#/components/examples/UserExample'
+  
+  /user/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: User id
+        schema:
+          type: string
+    get:
+      tags:
+        - User
+      summary: Retrieve an user by it's id
+      responses:
+        200: 
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                userExample:
+                  $ref: '#/components/examples/UserExample'
+        404:
+          description: User not found
+    delete:
+      tags:
+        - User
+      summary: Delete an user by it's Id
+      responses:
+        200:
+          description: User deleted successfully
+          content:
+            application/json:
+              examples:
+                deleteExample:
+                  value:
+                    OK
+        404:
+          description: User not found
+
+  
+  /user/by-socket/{socketId}:
+    parameters:
+      - name: id
+        in: path
+        description: User id
+        schema:
+          type: string
+    get:
+      tags:
+        - User
+      summary: Retrieve an user by it's socketId
+      responses:
+        200: 
+          description: User retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+              examples:
+                userExample:
+                  $ref: '#/components/examples/UserExample'
+        404:
+          description: User not found
+    delete:
+      tags:
+        - User
+      summary: Delete an user by it's socketId
+      responses:
+        200:
+          description: User deleted successfully
+          content:
+            application/json:
+              examples:
+                deleteExample:
+                  value:
+                    OK
+        404:
+          description: User not found
+
+  /match:
+    post:
+      tags:
+        - Match
+      summary: Create a match
+      requestBody:
+        description: Required data for creating a match
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchUsers'
+            examples:
+              matchUsersExample:
+                $ref: '#/components/examples/MatchUsersExample'
+      responses:
+        200:
+          description: Match created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+              examples:
+                matchExample:
+                  $ref: '#/components/examples/MatchExample'
+  
+  /match/{id}/move/cross:
+    parameters:
+      - name: id
+        in: path
+        description: Match id
+        schema:
+          type: string
+    patch:
+      tags:
+        - Match
+      summary: Register a move on the grid of a match for the player as cross
+      requestBody:
+        description: The player id and the coordinates of his move on the match's grid
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/MatchMove'
+            examples:
+              matchMoveExample:
+                $ref: '#/components/examples/MatchMoveExample'
+      responses:
+        200:
+          description: A move was successfully registered for the player as cross
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+              examples:
+                matchExample:
+                  $ref: '#/components/examples/MatchExample'
+        404:
+          description: User not found
+
+  /match/{id}/move/circle:
+    parameters:
+      - name: id
+        in: path
+        description: Match id
+        schema:
+          type: string
+    patch:
+      tags:
+        - Match
+      summary: Register a move on the grid of a match for the player as circle
+      requestBody:
+        description: The player id and the coordinates of his move on the match's grid
+        content:
+          application/json:
+            schema: 
+              $ref: '#/components/schemas/MatchMove'
+            examples:
+              matchMoveExample:
+                $ref: '#/components/examples/MatchMoveExample'
+      responses:
+        200:
+          description: A move was successfully registered for the player as circle
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+              examples:
+                matchExample:
+                  $ref: '#/components/examples/MatchExample'
+        404:
+          description: User not found
+
+  /match/{id}:
+    parameters:
+      - name: id
+        in: path
+        description: Match id
+        schema:
+          type: string
+    delete:
+      tags:
+        - Match
+      summary: Deletes a match
+      responses:
+        200:
+          description: Susscessfully deleted the match
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Match'
+              examples:
+                matchExample:
+                  $ref: '#/components/examples/Match'
+        404:
+          description: User not found
+  
