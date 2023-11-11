@@ -31,15 +31,19 @@ router.put("/:id/add/player", async (req, res) => {
 
   let match = await matchRepository.fetch(id);
 
-  let players = [...match.players, socketId];
+  if(match[EntityId]){
+    let players = [...match.players, socketId];
 
-  match.players = players;
+    match.players = players;
 
-  match = await matchRepository.save(match);
+    match = await matchRepository.save(match);
 
-  const grid = await client.json.get(id);
+    const grid = await client.json.get(id);
 
-  res.status(HTTP_STATUS.OK).json({ match, grid });
+    res.status(HTTP_STATUS.OK).json({ match, grid });
+  }else{
+    res.status(HTTP_STATUS.NOT_FOUND).send()
+  }
 });
 
 router.put("/:id/remove/player", async (req, res) => {
@@ -48,22 +52,40 @@ router.put("/:id/remove/player", async (req, res) => {
 
   let match = await matchRepository.fetch(id);
 
-  let players = match.players;
+  if(match[EntityId]){
+    let players = match.players;
 
-  match.players = players.filter((player) => player != socketId);
+    const filteredPlayers = players.filter((player) => player != socketId);
+    match.players = filteredPlayers
 
-  if (match.players.length) {
-    await matchRepository.save(match);
+    if (match.players.length) {
+      match.first = filteredPlayers[0]
+      match.round = filteredPlayers[0]
 
-    const grid = await client.json.get(id);
+      const matchReset = matchService.resetMatch(match)
 
-    res.status(HTTP_STATUS.OK).json({ match, grid });
-  } else {
-    await matchRepository.remove(id);
+      match.turn = matchReset.turn
+      match.endgame = matchReset.endgame
+      match.circleWin = matchReset.circleWin
+      match.crossWin = matchReset.crossWin
+      match.draw = matchReset.draw
 
-    await client.json.del(id);
+      await matchRepository.save(match);
 
-    res.status(HTTP_STATUS.OK).send();
+      const newGrid = matchService.initGrid()
+
+      await client.json.set(id, '$', newGrid)
+
+      const grid = await client.json.get(id);
+
+      res.status(HTTP_STATUS.OK).json({ match, grid });
+    } else {
+      await matchRepository.remove(id);
+
+      await client.json.del(id);
+
+      res.status(HTTP_STATUS.OK).send();
+    }
   }
 });
 
@@ -89,7 +111,7 @@ router.patch("/:id/move/cross", async (req, res) => {
 
   let match = await matchRepository.fetch(id);
 
-  if (match) {
+  if (match[EntityId]) {
     let grid = await client.json.get(id);
 
     if (matchService.checkPosition(row, col, grid)) {
@@ -138,7 +160,7 @@ router.patch("/:id/move/circle", async (req, res) => {
 
   let match = await matchRepository.fetch(id);
 
-  if (match) {
+  if (match[EntityId]) {
     let grid = await client.json.get(id);
 
     if (matchService.checkPosition(row, col, grid)) {
