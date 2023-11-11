@@ -25,6 +25,64 @@ router.post("/", async (req, res) => {
   res.status(HTTP_STATUS.CREATED).json({ match, grid });
 });
 
+router.put("/:id/add/player", async (req, res) => {
+  const { id } = req.params;
+  const { socketId } = req.body;
+
+  let match = await matchRepository.fetch(id);
+
+  let players = [...match.players, socketId];
+
+  match.players = players;
+
+  match = await matchRepository.save(match);
+
+  const grid = await client.json.get(id);
+
+  res.status(HTTP_STATUS.OK).json({ match, grid });
+});
+
+router.put("/:id/remove/player", async (req, res) => {
+  const { id } = req.params;
+  const { socketId } = req.body;
+
+  let match = await matchRepository.fetch(id);
+
+  let players = match.players;
+
+  match.players = players.filter((player) => player != socketId);
+
+  if (match.players.length) {
+    await matchRepository.save(match);
+
+    const grid = await client.json.get(id);
+
+    res.status(HTTP_STATUS.OK).json({ match, grid });
+  } else {
+    await matchRepository.remove(id);
+
+    await client.json.del(id);
+
+    res.status(HTTP_STATUS.OK).send();
+  }
+});
+
+router.get("/player/:socketId", async (req, res) => {
+  const { socketId } = req.params;
+
+  let matchId = await matchRepository
+    .search()
+    .where("players")
+    .contain(socketId)
+    .firstId();
+
+  if (matchId) {
+    res.status(HTTP_STATUS.OK).json({ matchId });
+  } else {
+    res.status(HTTP_STATUS.NOT_FOUND).send();
+  }
+});
+
 router.patch("/:id/move/cross", async (req, res) => {
   const { id } = req.params;
   const { row, col, playerId } = req.body;
@@ -51,13 +109,19 @@ router.patch("/:id/move/cross", async (req, res) => {
       match.crossWin = gameDetails.crossWin;
       match.draw = gameDetails.draw;
 
+      let crossScore = match.crossScore;
+      let circleScore = match.circleScore;
+
       if (gameDetails.crossWin) {
-        match.crossScore += 1;
+        crossScore = crossScore + 1;
       }
 
       if (gameDetails.circlWin) {
-        match.circleScore += 1;
+        circleScore = circleScore + 1;
       }
+
+      match.crossScore = crossScore;
+      match.circleScore = circleScore;
 
       match = await matchRepository.save(match);
     }
@@ -73,7 +137,7 @@ router.patch("/:id/move/circle", async (req, res) => {
   const { row, col, playerId } = req.body;
 
   let match = await matchRepository.fetch(id);
-  
+
   if (match) {
     let grid = await client.json.get(id);
 
@@ -94,13 +158,19 @@ router.patch("/:id/move/circle", async (req, res) => {
       match.crossWin = gameDetails.crossWin;
       match.draw = gameDetails.draw;
 
+      let crossScore = match.crossScore;
+      let circleScore = match.circleScore;
+
       if (gameDetails.crossWin) {
-        match.crossScore += 1;
+        crossScore = crossScore + 1;
       }
 
-      if (gameDetails.circlWin) {
-        match.circleScore += 1;
+      if (gameDetails.circleWin) {
+        circleScore = circleScore + 1;
       }
+
+      match.crossScore = crossScore;
+      match.circleScore = circleScore;
 
       match = await matchRepository.save(match);
     }
@@ -117,8 +187,28 @@ router.delete("/:id", async (req, res) => {
   if (id) {
     await matchRepository.remove(id);
 
+    await client.json.del(id);
+
     res.status(HTTP_STATUS.OK).json("OK");
   } else {
     res.status(HTTP_STATUS.NOT_FOUND).send();
   }
 });
+
+router.put('/:id/reset', async (req, res) => {
+  const { id } = req.params
+
+  if(id){
+    let match = await matchRepository.fetch(id)
+
+    match = matchService.resetMatch(match)
+
+    const grid = matchService.initGrid()
+
+    await client.json.set(id, '$', grid)
+
+    res.status(HTTP_STATUS.OK).json({ match, grid })
+  }else{
+    res.status(HTTP_STATUS.NOT_FOUND).send()
+  }
+})

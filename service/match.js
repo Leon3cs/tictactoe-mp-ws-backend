@@ -17,6 +17,18 @@ const createMatch = (players) => {
   };
 };
 
+const resetMatch = (match) => {
+  return {
+    ...match,
+    turn: false,
+    round: match.first,
+    endgame: false,
+    circleWin: false,
+    crossWin: false,
+    draw: false,
+  }
+}
+
 const initGrid = () => {
   return [
     [0, 0, 0],
@@ -137,5 +149,6 @@ export default {
   crossMove,
   circleMove,
   checkForWinners,
-  checkPosition
+  checkPosition,
+  resetMatch
 };
