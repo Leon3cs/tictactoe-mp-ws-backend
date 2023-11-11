@@ -1,7 +1,6 @@
 import express from "express";
 import swaggerUi from 'swagger-ui-express'
 import YAML from 'yamljs'
-import { router as userRouter } from "./routers/user.js";
 import { router as matchRouter } from './routers/match.js'
 
 // create an express app and use JSON
@@ -12,7 +11,6 @@ app.use(express.json());
 const swaggerDocument = YAML.load('./docs/api.yml')
 app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
-app.use('/user', userRouter)
 app.use('/match', matchRouter)
 
 // start listening

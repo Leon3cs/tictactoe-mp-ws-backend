@@ -19,18 +19,6 @@ components:
       description: List of socketIds for the players in the match
       items:
         type: string
-    User:
-      type: object
-      properties:
-        name: 
-          type: string
-          description: User name
-        socketId:
-          type: string
-          description: User's socketId
-      required:
-        - name
-        - socketId
     MatchMove:
       type: object
       properties:
@@ -121,11 +109,6 @@ components:
             - [0,0,0]
             - [0,0,0]
             - [0,0,0]
-    UserExample:
-      summary: User example
-      value:
-        name: john21
-        socketId: aidaeifj9-prgijw97
     MatchMoveExample:
       summary: A player move on a match
       value: 
@@ -134,107 +117,10 @@ components:
         playerId: aidaeifj9-prgijw97
 
 tags:
-  - name: User
-    description: Management of users playing the games
   - name: Match
     description: Match management
 
 paths:
-  /user:
-    post:
-      tags:
-        - User
-      summary: Create an users
-      responses:
-        201: 
-          description: User created successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-              examples:
-                userExample:
-                  $ref: '#/components/examples/UserExample'
-  
-  /user/{id}:
-    parameters:
-      - name: id
-        in: path
-        description: User id
-        schema:
-          type: string
-    get:
-      tags:
-        - User
-      summary: Retrieve an user by it's id
-      responses:
-        200: 
-          description: User retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-              examples:
-                userExample:
-                  $ref: '#/components/examples/UserExample'
-        404:
-          description: User not found
-    delete:
-      tags:
-        - User
-      summary: Delete an user by it's Id
-      responses:
-        200:
-          description: User deleted successfully
-          content:
-            application/json:
-              examples:
-                deleteExample:
-                  value:
-                    OK
-        404:
-          description: User not found
-
-  
-  /user/by-socket/{socketId}:
-    parameters:
-      - name: id
-        in: path
-        description: User id
-        schema:
-          type: string
-    get:
-      tags:
-        - User
-      summary: Retrieve an user by it's socketId
-      responses:
-        200: 
-          description: User retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-              examples:
-                userExample:
-                  $ref: '#/components/examples/UserExample'
-        404:
-          description: User not found
-    delete:
-      tags:
-        - User
-      summary: Delete an user by it's socketId
-      responses:
-        200:
-          description: User deleted successfully
-          content:
-            application/json:
-              examples:
-                deleteExample:
-                  value:
-                    OK
-        404:
-          description: User not found
-
   /match:
     post:
       tags:
