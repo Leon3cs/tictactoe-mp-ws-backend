@@ -19,7 +19,6 @@ const createMatch = (players) => {
 
 const resetMatch = (match) => {
   return {
-    ...match,
     turn: false,
     round: match.first,
     endgame: false,
@@ -78,13 +77,16 @@ const isCrossWinCheck = (grid) => {
     if (row.filter((item) => item === CROSS).length === 3) cross = true;
   });
 
-  let positions = [];
+  let positionsLR = [];
+  let positionsRL = []
 
   grid.forEach((row, index) => {
-    positions.push(row[index]);
+    positionsLR.push(row[index]);
+    positionsRL.push(row[row.length - 1 - index])
   });
 
-  if (positions.filter((item) => item === CROSS).length === 3) cross = true;
+  if (positionsLR.filter((item) => item === CROSS).length === 3) cross = true;
+  if (positionsRL.filter((item) => item === CROSS).length === 3) cross = true;
 
   return cross;
 };
@@ -106,13 +108,16 @@ const isCircleWinCheck = (grid) => {
     if (row.filter((item) => item === CIRCLE).length === 3) circle = true;
   });
 
-  let positions = [];
+  let positionsLR = [];
+  let positionsRL = []
 
   grid.forEach((row, index) => {
-    positions.push(row[index]);
+    positionsLR.push(row[index]);
+    positionsRL.push(row[row.length - 1 - index])
   });
 
-  if (positions.filter((item) => item === CIRCLE).length === 3) circle = true;
+  if (positionsLR.filter((item) => item === CIRCLE).length === 3) circle = true;
+  if (positionsRL.filter((item) => item === CIRCLE).length === 3) circle = true;
 
   return circle;
 };
