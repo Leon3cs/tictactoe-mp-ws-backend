@@ -201,7 +201,16 @@ router.put('/:id/reset', async (req, res) => {
   if(id){
     let match = await matchRepository.fetch(id)
 
-    match = matchService.resetMatch(match)
+    const matchReset = matchService.resetMatch(match)
+
+    match.turn = matchReset.turn
+    match.round = matchReset.round
+    match.endgame = matchReset.endgame
+    match.circleWin = matchReset.circleWin
+    match.crossWin = matchReset.crossWin
+    match.draw = matchReset.draw
+
+    await matchRepository.save(match)
 
     const grid = matchService.initGrid()
 
