@@ -1,7 +1,7 @@
 import { createClient } from "redis";
 
-const HOST = process.env.REDIS_HOST || 'db'
-const PORT = process.env.REDIS_PORT || '6379'
+const HOST = process.env.REDISHOST || 'db'
+const PORT = process.env.REDISPORT || '6379'
 
 const client = createClient({
     url: `redis://${HOST}:${PORT}`
