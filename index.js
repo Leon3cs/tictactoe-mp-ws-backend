@@ -14,7 +14,7 @@ app.use("/swagger", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use('/match', matchRouter)
 
 // start listening
-const port = process.env.PORT || 8080
+const port = process.env.PORT || 8000
 app.listen(port, () => {
     console.log(`Listening for request on port ${port}`)
 });
