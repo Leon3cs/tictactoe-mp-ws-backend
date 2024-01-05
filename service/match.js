@@ -1,11 +1,5 @@
-import { randomUUID } from 'crypto'
-
 export const CROSS = 1;
 export const CIRCLE = 2;
-
-const createMatchId = () => {
-  return randomUUID({ disableEntropyCache: false })
-}
 
 const createMatch = (players) => {
   return {
@@ -31,8 +25,6 @@ const resetMatch = (match) => {
     circleWin: false,
     crossWin: false,
     draw: false,
-    circleScore: 0,
-    crossScore: 0
   }
 }
 
@@ -163,6 +155,5 @@ export default {
   circleMove,
   checkForWinners,
   checkPosition,
-  resetMatch,
-  createMatchId
+  resetMatch
 };

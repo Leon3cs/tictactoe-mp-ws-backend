@@ -1,4 +1,6 @@
 import { Router } from "express";
+import { matchRepository } from "../repos/match.js";
+import { EntityId } from "redis-om";
 import client from "../configs/redis.js";
 import matchService from "../service/match.js";
 import { HTTP_STATUS } from "../util/http.js";
@@ -8,19 +10,17 @@ export const router = new Router();
 router.post("/", async (req, res) => {
   const { players } = req.body;
 
-  const id = matchService.createMatchId()
-
   const data = matchService.createMatch(players);
+
+  let match = await matchRepository.save(data);
 
   const grid = matchService.initGrid();
 
-  await client.json.set(`grid-${id}`, "$", grid);
+  await client.json.set(match[EntityId], "$", grid);
 
-  let match = {...data, gridId: id}
-  
-  await client.json.set(id, "$", match)
+  match.gridId = match[EntityId];
 
-  await client.json.set(`player-${players[0]}`, "$", id)
+  match = await matchRepository.save(match);
 
   res.status(HTTP_STATUS.CREATED).json({ match, grid });
 });
@@ -29,18 +29,16 @@ router.put("/:id/add/player", async (req, res) => {
   const { id } = req.params;
   const { socketId } = req.body;
 
-  let match = await client.json.get(id)
+  let match = await matchRepository.fetch(id);
 
-  if(match){
+  if(match[EntityId]){
     let players = [...match.players, socketId];
 
     match.players = players;
 
-    await client.json.set(id, "$", match)
+    match = await matchRepository.save(match);
 
-    const grid = await client.json.get(`grid-${id}`);
-
-    await client.json.set(`player-${socketId}`, "$", id)
+    const grid = await client.json.get(id);
 
     res.status(HTTP_STATUS.OK).json({ match, grid });
   }else{
@@ -52,11 +50,9 @@ router.put("/:id/remove/player", async (req, res) => {
   const { id } = req.params;
   const { socketId } = req.body;
 
-  let match = await client.json.get(id);
+  let match = await matchRepository.fetch(id);
 
-  await client.json.del(`player-${socketId}`)
-
-  if(match){
+  if(match[EntityId]){
     let players = match.players;
 
     const filteredPlayers = players.filter((player) => player != socketId);
@@ -73,22 +69,20 @@ router.put("/:id/remove/player", async (req, res) => {
       match.circleWin = matchReset.circleWin
       match.crossWin = matchReset.crossWin
       match.draw = matchReset.draw
-      match.crossScore = matchReset.crossScore
-      match.circleScore = matchReset.circleScore
 
-      await client.json.set(id, "$", match)
+      await matchRepository.save(match);
 
       const newGrid = matchService.initGrid()
 
-      await client.json.set(`grid-${id}`, '$', newGrid)
+      await client.json.set(id, '$', newGrid)
 
-      const grid = await client.json.get(`grid-${id}`);
+      const grid = await client.json.get(id);
 
       res.status(HTTP_STATUS.OK).json({ match, grid });
     } else {
-      await client.json.del(id);
+      await matchRepository.remove(id);
 
-      await client.json.del(`grid-${id}`);
+      await client.json.del(id);
 
       res.status(HTTP_STATUS.OK).send();
     }
@@ -98,7 +92,11 @@ router.put("/:id/remove/player", async (req, res) => {
 router.get("/player/:socketId", async (req, res) => {
   const { socketId } = req.params;
 
-  const matchId = await client.json.get(`player-${socketId}`) 
+  let matchId = await matchRepository
+    .search()
+    .where("players")
+    .contain(socketId)
+    .firstId();
 
   if (matchId) {
     res.status(HTTP_STATUS.OK).json({ matchId });
@@ -111,15 +109,15 @@ router.patch("/:id/move/cross", async (req, res) => {
   const { id } = req.params;
   const { row, col, playerId } = req.body;
 
-  let match = await client.json.get(id);
+  let match = await matchRepository.fetch(id);
 
-  if (match) {
-    let grid = await client.json.get(`grid-${id}`);
+  if (match[EntityId]) {
+    let grid = await client.json.get(id);
 
     if (matchService.checkPosition(row, col, grid)) {
       grid = matchService.crossMove(row, col, grid);
 
-      await client.json.set(`grid-${id}`, "$", grid);
+      await client.json.set(id, "$", grid);
 
       match.turn = !match.turn;
 
@@ -147,7 +145,7 @@ router.patch("/:id/move/cross", async (req, res) => {
       match.crossScore = crossScore;
       match.circleScore = circleScore;
 
-      await client.json.set(id, "$", match);
+      match = await matchRepository.save(match);
     }
 
     res.status(HTTP_STATUS.OK).json({ match, grid });
@@ -160,15 +158,15 @@ router.patch("/:id/move/circle", async (req, res) => {
   const { id } = req.params;
   const { row, col, playerId } = req.body;
 
-  let match = await client.json.get(id);
+  let match = await matchRepository.fetch(id);
 
-  if (match) {
-    let grid = await client.json.get(`grid-${id}`);
+  if (match[EntityId]) {
+    let grid = await client.json.get(id);
 
     if (matchService.checkPosition(row, col, grid)) {
       grid = matchService.circleMove(row, col, grid);
 
-      await client.json.set(`grid-${id}`, "$", grid);
+      await client.json.set(id, "$", grid);
 
       match.turn = !match.turn;
 
@@ -196,7 +194,7 @@ router.patch("/:id/move/circle", async (req, res) => {
       match.crossScore = crossScore;
       match.circleScore = circleScore;
 
-      await client.json.set(id, "$", match);
+      match = await matchRepository.save(match);
     }
 
     res.status(HTTP_STATUS.OK).json({ match, grid });
@@ -209,9 +207,9 @@ router.delete("/:id", async (req, res) => {
   const { id } = req.params;
 
   if (id) {
-    await client.json.del(id);
+    await matchRepository.remove(id);
 
-    await client.json.del(`grid-${id}`);
+    await client.json.del(id);
 
     res.status(HTTP_STATUS.OK).json("OK");
   } else {
@@ -223,7 +221,7 @@ router.put('/:id/reset', async (req, res) => {
   const { id } = req.params
 
   if(id){
-    let match = await client.json.get(id)
+    let match = await matchRepository.fetch(id)
 
     const matchReset = matchService.resetMatch(match)
 
@@ -234,11 +232,11 @@ router.put('/:id/reset', async (req, res) => {
     match.crossWin = matchReset.crossWin
     match.draw = matchReset.draw
 
-    await client.json.set(id, "$", match)
+    await matchRepository.save(match)
 
     const grid = matchService.initGrid()
 
-    await client.json.set(`grid-${id}`, '$', grid)
+    await client.json.set(id, '$', grid)
 
     res.status(HTTP_STATUS.OK).json({ match, grid })
   }else{
